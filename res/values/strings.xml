@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="app_name">Android HttpClient Demo</string>
+	<string name="icon_name">HttpClient Demo</string>
+	<string name="load_title">Android HttpClient Demo: Daten laden</string>
+	<string name="settings_title">Android HttpClient Demo: Einstellungen</string>
+	<string name="intro">Diese App ist eine einfache Demo, die die
+		Verwendung der HttpClient-Klasse beispielhaft erläutern soll.</string>
+	<string name="select">Bitte wähle eine Aufgabe:</string>
+	<string name="task_load">Daten laden</string>
+	<string-array name="tasks">
+		<item>Daten laden</item>
+	</string-array>
+	<string name="label_settings">Einstellungen</string>
+	<string name="key_api_key">flickr API Key</string>
+	<string name="please_configure_api_key">Bitte den flickr-API-Key konfigurieren.</string>
+</resources>
