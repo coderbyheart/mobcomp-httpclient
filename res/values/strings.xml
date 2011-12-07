@@ -13,5 +13,6 @@
 	</string-array>
 	<string name="label_settings">Einstellungen</string>
 	<string name="key_api_key">flickr API Key</string>
+	<string name="key_nsid">flickr NSID</string>
 	<string name="please_configure_api_key">Bitte den flickr-API-Key konfigurieren.</string>
 </resources>

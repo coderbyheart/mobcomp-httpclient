@@ -38,7 +38,9 @@ public class LoadActivity extends Activity {
 
 		SharedPreferences prefs = PrefsActivity.getPreferences(this);
 		String keyFlickrAPIKey = getResources().getString(R.string.key_api_key);
+		String flickrNSIDKey = getResources().getString(R.string.key_nsid);
 		flickrAPIKey = prefs.getString(keyFlickrAPIKey, null);
+		String flickrNSID = prefs.getString(flickrNSIDKey, null);
 
 		if (flickrAPIKey == null || flickrAPIKey.length() <= 0) {
 			startActivity(new Intent(getApplicationContext(),
@@ -49,20 +51,18 @@ public class LoadActivity extends Activity {
 			finish();
 		}
 
-		Log.v(getClass().getCanonicalName(), "flickr API Key: " + flickrAPIKey);
-
 		FlickrRestAPI flickr = new FlickrRestAPI(flickrAPIKey);
 		
-		// TODO: Internetpermission
 		// TODO: Thread
 
 		// URL um meine flickr-Alben zu laden
-		Uri galleriesUri = flickr.getGalleries();
+		Uri galleriesUri = flickr.getGalleries(flickrNSID);
 
 		// HTTP-Client erzeugen
 		HttpClient client = new DefaultHttpClient();
 
 		// Wir machen einen GET-Request
+		Log.v(getClass().getCanonicalName(), galleriesUri.toString());
 		HttpGet request = new HttpGet(galleriesUri.toString());
 		// mit request.setHeader(header, value) können beliebige Header im
 		// Request gesetzt werden
