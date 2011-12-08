@@ -5,3 +5,5 @@ bin
 default.properties
 proguard.cfg
 gen
+.settings
+project.properties
