@@ -3,18 +3,28 @@
 	<string name="app_name">Android HttpClient Demo</string>
 	<string name="icon_name">HttpClient Demo</string>
 	<string name="load_title">Android HttpClient Demo: Daten laden</string>
+	<string name="send_title">Android HttpClient Demo: Daten senden</string>
 	<string name="settings_title">Android HttpClient Demo: Einstellungen</string>
+	<string name="flickr_auth_title">Android HttpClient Demo: Bei flickr Autorisieren</string>
 	<string name="intro">Diese App ist eine einfache Demo, die die
 		Verwendung der HttpClient-Klasse beispielhaft erläutern soll.</string>
 	<string name="select">Bitte wähle eine Aufgabe:</string>
 	<string name="task_load">Daten laden</string>
 	<string-array name="tasks">
 		<item>Daten laden</item>
+		<item>Daten senden</item>
 	</string-array>
 	<string name="label_settings">Einstellungen</string>
 	<string name="key_api_key">flickr API Key</string>
+	<string name="key_api_secret">flickr API Secret</string>
+	<string name="key_api_auth_token">flickr Auth Token</string>
 	<string name="key_nsid">flickr NSID</string>
 	<string name="key_threadpool_size">Größe des Threadpools zum Laden von Fotos</string>
 	<string name="key_num_sets">Anzahl der zu ladenden Sets</string>
+	<string name="auth_token_saved">Auth-Token gespeichert.</string>
+	<string name="enter_auth_token">Token eingeben:</string>
+	<string name="authorize_app">Diese App autorisieren</string>
+	<string name="done">Fertig</string>
+	<string name="upload">Hochladen</string>
 	<string name="please_configure_api_key">Bitte den flickr-API-Key konfigurieren.</string>
 </resources>

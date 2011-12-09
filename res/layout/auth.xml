@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical" >
+
+    <Button
+        android:id="@+id/loginButton"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:background="@drawable/button"
+        android:text="@string/authorize_app"
+        android:textColor="@android:color/white" />
+
+    <TextView
+        android:id="@+id/enterTokenTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/enter_auth_token"
+        android:textAppearance="?android:attr/textAppearanceLarge" 
+        android:visibility="invisible"
+        />
+
+    <LinearLayout
+        android:id="@+id/enterTokenLayout"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:visibility="invisible" >
+
+        <EditText
+            android:id="@+id/token1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:enabled="false"
+            android:inputType="number" />
+
+        <EditText
+            android:id="@+id/token2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:enabled="false"
+            android:inputType="number" />
+
+        <EditText
+            android:id="@+id/token3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:enabled="false"
+            android:inputType="number" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/doneButton"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:background="@drawable/button"
+        android:text="@string/done"
+        android:textColor="@android:color/white"
+        android:visibility="invisible" />
+
+</LinearLayout>

@@ -12,6 +12,8 @@
 			</intent-filter>
 		</activity>
 		<activity android:name=".LoadActivity" android:label="@string/load_title" />
+		<activity android:name=".FlickrAuthActivity" android:label="@string/flickr_auth_title" />
+		<activity android:name=".SendActivity" android:label="@string/send_title" />
 		<activity android:name=".PrefsActivity" android:label="@string/settings_title" />
 	</application>
 	<uses-permission android:name="android.permission.INTERNET"/>

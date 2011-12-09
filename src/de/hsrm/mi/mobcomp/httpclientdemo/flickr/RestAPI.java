@@ -1,9 +1,23 @@
 package de.hsrm.mi.mobcomp.httpclientdemo.flickr;
 
+import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.TreeMap;
 
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.message.BasicNameValuePair;
+
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.net.Uri.Builder;
+import android.util.Log;
 
 /**
  * Helfer-Klasse für die flickr-REST-API
@@ -29,17 +43,30 @@ public class RestAPI {
 	public static final String SIZE_MEDIUM640 = "Medium 640";
 	public static final String SIZE_ORIGINAL = "Original";
 
-	private static final String baseUri = "http://api.flickr.com/services/rest/";
+	public static final String PERM_READ = "read";
+	public static final String PERM_WRITE = "write";
+	public static final String PERM_DELETE = "delete";
+
+	private static final Uri baseUri = Uri
+			.parse("http://api.flickr.com/services/rest/");
 	private String apiKey;
+	private String apiSecret;
 	private String format = FORMAT_REST;
+	private String authToken;
 
 	public RestAPI(String apiKey) {
 		this.apiKey = apiKey;
 	}
 
-	public RestAPI(String apiKey, String format) {
+	public RestAPI(String apiKey, String apiSecret) {
 		this.apiKey = apiKey;
-		this.format = format;
+		this.apiSecret = apiSecret;
+	}
+
+	public RestAPI(String apiKey, String apiSecret, String authToken) {
+		this.apiKey = apiKey;
+		this.apiSecret = apiSecret;
+		this.authToken = authToken;
 	}
 
 	/**
@@ -63,7 +90,7 @@ public class RestAPI {
 	}
 
 	private Uri getUri(String method, HashMap<String, String> params) {
-		Builder uriBuilder = Uri.parse(baseUri).buildUpon()
+		Builder uriBuilder = baseUri.buildUpon()
 				.appendQueryParameter("api_key", apiKey)
 				.appendQueryParameter("method", method)
 				.appendQueryParameter("format", format);
@@ -73,6 +100,58 @@ public class RestAPI {
 			}
 		}
 		return uriBuilder.build();
+	}
+
+	private Uri getSignedUri(String method) {
+		return getSignedUri(method, null);
+	}
+
+	private Uri getSignedUri(String method, TreeMap<String, String> params) {
+		return getSignedUri(method, params, baseUri);
+	}
+
+	private Uri getSignedUri(String method, TreeMap<String, String> params,
+			Uri uri) {
+		params.put("api_key", apiKey);
+		params.put("method", method);
+		params.put("format", format);
+		if (authToken != null)
+			params.put("auth_token", authToken);
+		Builder uriBuilder = uri.buildUpon();
+		for (String key : params.keySet()) {
+			uriBuilder.appendQueryParameter(key, params.get(key));
+		}
+		uriBuilder.appendQueryParameter("api_sig", sign(params));
+		return uriBuilder.build();
+	}
+	
+	private String sign(TreeMap<String, String> params)
+	{
+		String sig = apiSecret;
+		for (String key : params.keySet()) {
+			sig += key + params.get(key);
+		}
+		Log.v(getClass().getCanonicalName(), sig);
+		return md5(sig);
+	}
+
+	private String md5(String text) {
+		MessageDigest m;
+		try {
+			m = MessageDigest.getInstance("MD5");
+		} catch (NoSuchAlgorithmException e) {
+			Log.e(getClass().getCanonicalName(), e.toString());
+			return null;
+		}
+		m.reset();
+		m.update(text.getBytes());
+		byte[] digest = m.digest();
+		BigInteger bigInt = new BigInteger(1, digest);
+		String hashtext = bigInt.toString(16);
+		while (hashtext.length() < 32) {
+			hashtext = "0" + hashtext;
+		}
+		return hashtext;
 	}
 
 	/**
@@ -87,4 +166,45 @@ public class RestAPI {
 		return getUri("flickr.photos.getSizes", params);
 	}
 
+	public Uri getAuthFrobUri() {
+		return this.getSignedUri("flickr.auth.getFrob");
+	}
+
+	public Uri getAuthUri(String frob, String perms) {
+		TreeMap<String, String> params = new TreeMap<String, String>();
+		params.put("frob", frob);
+		params.put("perms", perms);
+		return getSignedUri("flickr.auth.getFrob", params,
+				Uri.parse("http://flickr.com/services/auth/"));
+	}
+
+	public Uri getFullTokenUri(String token) {
+		TreeMap<String, String> params = new TreeMap<String, String>();
+		params.put("mini_token", token);
+		return getSignedUri("flickr.auth.getFullToken", params);
+	}
+
+	public Uri getUploadUri() {
+		return Uri.parse("http://api.flickr.com/services/upload/");
+	}
+
+	public HttpPost getUploadRequest(Bitmap bitmap) {
+		
+		HttpPost request = new HttpPost(getUploadUri().toString());
+        List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
+        TreeMap<String, String> params = new TreeMap<String, String>();
+        params.put("api_key", apiKey);
+        params.put("auth_token", authToken);
+        Log.v(getClass().getCanonicalName(), sign(params));
+        nameValuePairs.add(new BasicNameValuePair("api_key", apiKey));
+        nameValuePairs.add(new BasicNameValuePair("auth_token", authToken));
+        nameValuePairs.add(new BasicNameValuePair("photo", bitmap.toString()));
+        nameValuePairs.add(new BasicNameValuePair("api_sig", sign(params)));
+        try {
+			request.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+		} catch (UnsupportedEncodingException e) {
+			Log.e(getClass().getCanonicalName(), e.toString());
+		}
+		return request;
+	}
 }

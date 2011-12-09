@@ -35,6 +35,9 @@ public class MainActivity extends MenuActivity {
 				case 0:
 					startActivity(new Intent(getApplicationContext(), LoadActivity.class));
 					break;
+				case 1:
+					startActivity(new Intent(getApplicationContext(), FlickrAuthActivity.class));
+					break;
 				}
 			}
 		});

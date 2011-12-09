@@ -20,7 +20,7 @@ import android.util.Log;
  * 
  * @author Markus Tacker <m@coderbyheart.de>
  */
-public class SetsReader {
+public class SetsReader extends XmlReader {
 
 	public class Set {
 		public String id;
@@ -75,11 +75,5 @@ public class SetsReader {
 			Log.e(getClass().getCanonicalName(), e.getMessage());
 		}
 		return sets;
-	}
-
-	private String getTextValue(Node node) {
-		NodeList childNodes = node.getChildNodes();
-		if (childNodes.getLength() <= 0) return "";
-		return childNodes.item(0).getNodeValue();
 	}
 }
