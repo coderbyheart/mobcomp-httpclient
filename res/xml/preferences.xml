@@ -1,7 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-	<EditTextPreference android:title="@string/key_api_key"
-		android:key="@string/key_api_key"></EditTextPreference>
-	<EditTextPreference android:title="@string/key_nsid"
-		android:key="@string/key_nsid"></EditTextPreference>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <EditTextPreference
+        android:defaultValue="d4be129c84cc8fb6dd988d1f1dfef25d"
+        android:key="@string/key_api_key"
+        android:title="@string/key_api_key" />
+
+    <EditTextPreference
+        android:defaultValue="58334991@N00"
+        android:key="@string/key_nsid"
+        android:title="@string/key_nsid" />
+
+    <EditTextPreference
+        android:defaultValue="4"
+        android:key="@string/key_threadpool_size"
+        android:title="@string/key_threadpool_size" />
+
+    <EditTextPreference
+        android:defaultValue="20"
+        android:key="@string/key_num_sets"
+        android:title="@string/key_num_sets" />
+
 </PreferenceScreen>

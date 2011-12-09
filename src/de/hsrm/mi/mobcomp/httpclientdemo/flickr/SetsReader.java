@@ -1,4 +1,4 @@
-package de.hsrm.mi.mobcomp.httpclientdemo.xml;
+package de.hsrm.mi.mobcomp.httpclientdemo.flickr;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -15,12 +15,21 @@ import org.xml.sax.SAXException;
 
 import android.util.Log;
 
+/**
+ * Parst eine flickr-XML-Antwort mit Sets und erzeugt daraus eine Liste von Sets
+ * 
+ * @author Markus Tacker <m@coderbyheart.de>
+ */
 public class SetsReader {
 
 	public class Set {
 		public String id;
 		public String title;
 		public String description;
+		/**
+		 * Titel-Bild des Sets
+		 */
+		public String primaryPhotoId;
 
 		public String toString() {
 			return "#" + id + ": " + title;
@@ -44,6 +53,8 @@ public class SetsReader {
 				Set set = new Set();
 				set.id = setNode.getAttributes().getNamedItem("id")
 						.getNodeValue();
+				set.primaryPhotoId = setNode.getAttributes().getNamedItem("primary")
+						.getNodeValue(); 
 				NodeList setChilds = setNode.getChildNodes();
 				for (int j = 0; j < setChilds.getLength(); j++) {
 					Node setChild = setChilds.item(j);
@@ -54,7 +65,6 @@ public class SetsReader {
 						set.description = getTextValue(setChild);
 					}
 				}
-				Log.v(getClass().getCanonicalName(), set.toString());
 				sets.add(set);
 			}
 		} catch (SAXException e) {

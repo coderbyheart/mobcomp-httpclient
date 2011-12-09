@@ -14,5 +14,7 @@
 	<string name="label_settings">Einstellungen</string>
 	<string name="key_api_key">flickr API Key</string>
 	<string name="key_nsid">flickr NSID</string>
+	<string name="key_threadpool_size">Größe des Threadpools zum Laden von Fotos</string>
+	<string name="key_num_sets">Anzahl der zu ladenden Sets</string>
 	<string name="please_configure_api_key">Bitte den flickr-API-Key konfigurieren.</string>
 </resources>

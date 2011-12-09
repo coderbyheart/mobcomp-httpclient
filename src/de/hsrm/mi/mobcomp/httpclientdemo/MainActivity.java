@@ -2,13 +2,8 @@ package de.hsrm.mi.mobcomp.httpclientdemo;
 
 import org.apache.http.client.HttpClient;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
@@ -22,7 +17,7 @@ import android.widget.ListView;
  * 
  * @author Markus Tacker <m@coderbyheart.de>
  */
-public class MainActivity extends Activity {
+public class MainActivity extends MenuActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -43,25 +38,5 @@ public class MainActivity extends Activity {
 				}
 			}
 		});
-	}
-	
-
-	
-	@Override 
-    public boolean onCreateOptionsMenu(Menu menu) { 
-        new MenuInflater(this).inflate(R.menu.menu, menu);
-        return true; 
-    } 
-	
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item)
-	{
-		switch(item.getItemId()) {
-		case R.id.menu_settings:
-			Log.v(getClass().getCanonicalName(), "Settings!");
-			startActivity(new Intent(getApplicationContext(), PrefsActivity.class));
-			return true;
-		}
-		return false;
-    }	
+	}	
 }
