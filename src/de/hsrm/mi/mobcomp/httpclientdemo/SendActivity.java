@@ -1,22 +1,31 @@
 package de.hsrm.mi.mobcomp.httpclientdemo;
 
 import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TreeMap;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.DefaultHttpClient;
 
+import android.app.ProgressDialog;
+import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.provider.MediaStore;
 import android.util.Log;
@@ -24,7 +33,10 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.Toast;
+import de.hsrm.mi.mobcomp.httpclientdemo.extra.ProgressMultipartEntity;
+import de.hsrm.mi.mobcomp.httpclientdemo.extra.ProgressMultipartEntity.ProgressListener;
 import de.hsrm.mi.mobcomp.httpclientdemo.flickr.RestAPI;
 import de.hsrm.mi.mobcomp.httpclientdemo.flickr.UploadReader;
 
@@ -45,9 +57,14 @@ public class SendActivity extends MenuActivity {
 	private Handler handler = new Handler();
 	private String flickrAPIAuthToken;
 
-	private static final int SELECT_PICTURE = 1;
-	private ImageButton imageButton;
+	private static final int CAPTURE_PICTURE = 2;
+	private ImageButton cameraButton;
+	private ImageView previewUpload;
+	private Bitmap bitmap;
 	private Uri selectedImageUri;
+	private File imageFile;
+	private long totalSize;
+	private ProgressDialog pd;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -73,16 +90,34 @@ public class SendActivity extends MenuActivity {
 
 		setContentView(R.layout.send);
 
-		imageButton = (ImageButton) findViewById(R.id.uploadImageButton);
-		imageButton.setOnClickListener(new OnClickListener() {
+		previewUpload = (ImageView) findViewById(R.id.previewUpload);
+
+		cameraButton = (ImageButton) findViewById(R.id.cameraButton);
+		cameraButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				Intent intent = new Intent();
-				intent.setType("image/*");
-				intent.setAction(Intent.ACTION_GET_CONTENT);
+
+				File cacheDir = new File(Environment
+						.getExternalStorageDirectory().getAbsolutePath()
+						+ "/de.hsrm.mi.mobcomp.httpclientdemo/captures/");
+				if (!cacheDir.exists()) {
+					if (!cacheDir.mkdirs())
+						return;
+				}
+				// Pfad zur Cache-Datei
+				imageFile = new File(cacheDir.getAbsolutePath()
+						+ "/"
+						+ new SimpleDateFormat("yyyyMMdd_HHmmss")
+								.format(new Date()) + ".jpg");
+
+				selectedImageUri = Uri.fromFile(imageFile);
+
+				Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+				intent.putExtra(MediaStore.EXTRA_OUTPUT, selectedImageUri);
+
 				startActivityForResult(
 						Intent.createChooser(intent, "Select Picture"),
-						SELECT_PICTURE);
+						CAPTURE_PICTURE);
 			}
 		});
 
@@ -93,12 +128,20 @@ public class SendActivity extends MenuActivity {
 				new Thread(new Runnable() {
 					@Override
 					public void run() {
-						Bitmap bitmap = getBitmapFromUri();
+						handler.post(new Runnable() {
+							@Override
+							public void run() {
+								pd.show();
+							}
+						});
 						uploadBitmap(bitmap);
 						handler.post(new Runnable() {
 							@Override
 							public void run() {
-								Toast.makeText(SendActivity.this, "Upload complete", Toast.LENGTH_LONG).show();
+								pd.dismiss();
+								Toast.makeText(SendActivity.this,
+										"Upload complete", Toast.LENGTH_LONG)
+										.show();
 							}
 						});
 					}
@@ -106,30 +149,59 @@ public class SendActivity extends MenuActivity {
 				}).start();
 			}
 		});
+
+		flickrAPI = new RestAPI(flickrAPIKey, flickrAPISecret,
+				flickrAPIAuthToken);
 		
-		flickrAPI = new RestAPI(flickrAPIKey, flickrAPISecret, flickrAPIAuthToken);
+		pd = new ProgressDialog(this);
+		pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+		pd.setMessage("Uploading Picture...");
+		pd.setCancelable(false);
 	}
 
-	private Bitmap getBitmapFromUri() {
-		try {
-			// Um and die Daten einer Bild-URL
-			// (content://media/external/images/media/3)
-			// zu
-			// kommen, verwenden wir den MediaStore
-			return MediaStore.Images.Media.getBitmap(getContentResolver(),
-					selectedImageUri);
-		} catch (FileNotFoundException e) {
-			Log.e(getClass().getCanonicalName(), e.toString());
-		} catch (IOException e) {
-			Log.e(getClass().getCanonicalName(), e.toString());
-
-		}
-		return null;
-	}
-
+	/**
+	 * @todo TODO: http://www.flickr.com/services/api/upload.example.html
+	 * @todo TODO:
+	 *       http://blog.tacticalnuclearstrike.com/2010/01/using-multipartentity
+	 *       -in-android-applications/
+	 * 
+	 * @param bitmap
+	 * @return
+	 */
 	private void uploadBitmap(Bitmap bitmap) {
+		TreeMap<String, String> params = new TreeMap<String, String>();
+		params.put("api_key", flickrAPI.getApiKey());
+		params.put("auth_token", flickrAPI.getAuthToken());
+		params.put("tags", "httpclientdemo hsrm mobile android");
+		String requestSignature = flickrAPI.sign(params);
+
 		HttpClient client = new DefaultHttpClient();
-		HttpPost request = flickrAPI.getUploadRequest(bitmap);
+		HttpPost request = new HttpPost(flickrAPI.getUploadUri().toString());
+		
+		// MultipartEntity multipartContent = new MultipartEntity();
+		ProgressMultipartEntity multipartContent = new ProgressMultipartEntity(new ProgressListener()
+		{
+			@Override
+			public void transferred(long num)
+			{
+				publishProgress((int) ((num / (float) totalSize) * 100));
+			}
+		});
+
+		try {
+			for (String param : params.keySet()) {
+				multipartContent.addPart(param,
+						new StringBody(params.get(param)));
+			}
+			multipartContent.addPart("photo", new FileBody(imageFile));
+			multipartContent.addPart("api_sig",
+					new StringBody(requestSignature));
+			totalSize = multipartContent.getContentLength();
+		} catch (UnsupportedEncodingException e) {
+			Log.e(getClass().getCanonicalName(), e.toString());
+		}
+
+		request.setEntity(multipartContent);
 
 		try {
 			HttpResponse response = client.execute(request);
@@ -156,17 +228,36 @@ public class SendActivity extends MenuActivity {
 		} catch (IOException e) {
 			Log.e(getClass().getCanonicalName(), e.toString());
 		}
+	}
 
+	/**
+	 * Progressbar aktualisieren
+	 * 
+	 * @param i Progress in Prozent 0 > i > 100
+	 */
+	protected void publishProgress(final int i) {
+		Log.v(getClass().getCanonicalName(), "Progress: " + i);
+		handler.post(new Runnable() {
+			@Override
+			public void run() {
+				pd.setProgress(i);
+			}
+		});
 	}
 
 	@Override
 	public void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if (resultCode == RESULT_OK) {
-			if (requestCode == SELECT_PICTURE) {
-				selectedImageUri = data.getData();
-				Log.v(getClass().getCanonicalName(),
-						selectedImageUri.toString());
-				imageButton.setImageURI(selectedImageUri);
+			if (requestCode == CAPTURE_PICTURE) {
+				ContentResolver cr = getContentResolver();
+				Bitmap bitmap;
+				try {
+					bitmap = android.provider.MediaStore.Images.Media
+							.getBitmap(cr, selectedImageUri);
+					previewUpload.setImageBitmap(bitmap);
+				} catch (Exception e) {
+					Log.e(getClass().getCanonicalName(), e.toString());
+				}
 			}
 		}
 	}

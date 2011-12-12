@@ -26,5 +26,7 @@
 	<string name="authorize_app">Diese App autorisieren</string>
 	<string name="done">Fertig</string>
 	<string name="upload">Hochladen</string>
+	<string name="select_picture">Foto auswählen</string>
+	<string name="take_picture">Foto machen</string>
 	<string name="please_configure_api_key">Bitte den flickr-API-Key konfigurieren.</string>
 </resources>

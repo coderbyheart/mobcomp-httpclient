@@ -1,20 +1,11 @@
 package de.hsrm.mi.mobcomp.httpclientdemo.flickr;
 
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.TreeMap;
 
-import org.apache.http.NameValuePair;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.message.BasicNameValuePair;
-
-import android.graphics.Bitmap;
 import android.net.Uri;
 import android.net.Uri.Builder;
 import android.util.Log;
@@ -55,18 +46,18 @@ public class RestAPI {
 	private String authToken;
 
 	public RestAPI(String apiKey) {
-		this.apiKey = apiKey;
+		this.setApiKey(apiKey);
 	}
 
 	public RestAPI(String apiKey, String apiSecret) {
-		this.apiKey = apiKey;
-		this.apiSecret = apiSecret;
+		this.setApiKey(apiKey);
+		this.setApiSecret(apiSecret);
 	}
 
 	public RestAPI(String apiKey, String apiSecret, String authToken) {
-		this.apiKey = apiKey;
-		this.apiSecret = apiSecret;
-		this.authToken = authToken;
+		this.setApiKey(apiKey);
+		this.setApiSecret(apiSecret);
+		this.setAuthToken(authToken);
 	}
 
 	/**
@@ -91,7 +82,7 @@ public class RestAPI {
 
 	private Uri getUri(String method, HashMap<String, String> params) {
 		Builder uriBuilder = baseUri.buildUpon()
-				.appendQueryParameter("api_key", apiKey)
+				.appendQueryParameter("api_key", getApiKey())
 				.appendQueryParameter("method", method)
 				.appendQueryParameter("format", format);
 		if (params != null) {
@@ -112,11 +103,11 @@ public class RestAPI {
 
 	private Uri getSignedUri(String method, TreeMap<String, String> params,
 			Uri uri) {
-		params.put("api_key", apiKey);
+		params.put("api_key", getApiKey());
 		params.put("method", method);
 		params.put("format", format);
-		if (authToken != null)
-			params.put("auth_token", authToken);
+		if (getAuthToken() != null)
+			params.put("auth_token", getAuthToken());
 		Builder uriBuilder = uri.buildUpon();
 		for (String key : params.keySet()) {
 			uriBuilder.appendQueryParameter(key, params.get(key));
@@ -125,13 +116,12 @@ public class RestAPI {
 		return uriBuilder.build();
 	}
 	
-	private String sign(TreeMap<String, String> params)
+	public String sign(TreeMap<String, String> params)
 	{
-		String sig = apiSecret;
+		String sig = getApiSecret();
 		for (String key : params.keySet()) {
 			sig += key + params.get(key);
 		}
-		Log.v(getClass().getCanonicalName(), sig);
 		return md5(sig);
 	}
 
@@ -188,23 +178,27 @@ public class RestAPI {
 		return Uri.parse("http://api.flickr.com/services/upload/");
 	}
 
-	public HttpPost getUploadRequest(Bitmap bitmap) {
-		
-		HttpPost request = new HttpPost(getUploadUri().toString());
-        List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
-        TreeMap<String, String> params = new TreeMap<String, String>();
-        params.put("api_key", apiKey);
-        params.put("auth_token", authToken);
-        Log.v(getClass().getCanonicalName(), sign(params));
-        nameValuePairs.add(new BasicNameValuePair("api_key", apiKey));
-        nameValuePairs.add(new BasicNameValuePair("auth_token", authToken));
-        nameValuePairs.add(new BasicNameValuePair("photo", bitmap.toString()));
-        nameValuePairs.add(new BasicNameValuePair("api_sig", sign(params)));
-        try {
-			request.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-		} catch (UnsupportedEncodingException e) {
-			Log.e(getClass().getCanonicalName(), e.toString());
-		}
-		return request;
+	public String getApiKey() {
+		return apiKey;
+	}
+
+	public void setApiKey(String apiKey) {
+		this.apiKey = apiKey;
+	}
+
+	public String getApiSecret() {
+		return apiSecret;
+	}
+
+	public void setApiSecret(String apiSecret) {
+		this.apiSecret = apiSecret;
+	}
+
+	public String getAuthToken() {
+		return authToken;
+	}
+
+	public void setAuthToken(String authToken) {
+		this.authToken = authToken;
 	}
 }

@@ -26,7 +26,6 @@ public class UploadReader extends XmlReader {
 				.newInstance();
 		domBuilderFactory.setIgnoringElementContentWhitespace(true);
 		try {
-			Log.v(getClass().getCanonicalName(), xmlData);
 			DocumentBuilder builder = domBuilderFactory.newDocumentBuilder();
 			Document doc = builder.parse(new ByteArrayInputStream(xmlData
 					.getBytes()));
