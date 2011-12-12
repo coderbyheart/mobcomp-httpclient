@@ -41,11 +41,14 @@ import de.hsrm.mi.mobcomp.httpclientdemo.flickr.RestAPI;
 import de.hsrm.mi.mobcomp.httpclientdemo.flickr.UploadReader;
 
 /**
- * Demonstriert, wie man mit dem {@link HttpClient} Daten laden kann.
+ * Demonstriert, wie man mit dem {@link HttpClient} Daten hochladen kann.
  * 
- * Verwendet dazu die flickr-API.
+ * In diesem Beispiel machen wir mit der Kamera ein Bild und schicken dieses zu
+ * flickr.
  * 
  * @see http://www.flickr.com/services/api/
+ * 
+ *      Während dem Upload zeigen wir auch noch den Verlauf an.
  * 
  * @author Markus Tacker <m@coderbyheart.de>
  */
@@ -57,7 +60,7 @@ public class SendActivity extends MenuActivity {
 	private Handler handler = new Handler();
 	private String flickrAPIAuthToken;
 
-	private static final int CAPTURE_PICTURE = 2;
+	private static final int CAPTURE_PICTURE = 1;
 	private ImageButton cameraButton;
 	private ImageView previewUpload;
 	private Bitmap bitmap;
@@ -65,11 +68,14 @@ public class SendActivity extends MenuActivity {
 	private File imageFile;
 	private long totalSize;
 	private ProgressDialog pd;
+	private Button uploadButton;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+		// OAuth wird erstmal nicht verwendet, da das nicht zum Thema gehört
+		// daher verwenden wir den API-Key, das API-Secret und den Auth-Token
 		SharedPreferences prefs = PrefsActivity.getPreferences(this);
 		String keyFlickrAPIKey = getResources().getString(R.string.key_api_key);
 		String keyFlickrAPISecret = getResources().getString(
@@ -90,21 +96,28 @@ public class SendActivity extends MenuActivity {
 
 		setContentView(R.layout.send);
 
+		// Vorschau des Bildes, das hochgeladen werden soll
 		previewUpload = (ImageView) findViewById(R.id.previewUpload);
 
+		// Der Button zum Starten der Kamera-App
 		cameraButton = (ImageButton) findViewById(R.id.cameraButton);
 		cameraButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
 
+				// Für den Upload brauchen wir eine Datei,
+				// daher dem Intent mit geben
 				File cacheDir = new File(Environment
 						.getExternalStorageDirectory().getAbsolutePath()
 						+ "/de.hsrm.mi.mobcomp.httpclientdemo/captures/");
 				if (!cacheDir.exists()) {
 					if (!cacheDir.mkdirs())
-						return;
+						Log.e(getClass().getCanonicalName(),
+								"Failed to create directory: "
+										+ cacheDir.toString());
+					return;
 				}
-				// Pfad zur Cache-Datei
+				// Pfad zur Bild-Datei
 				imageFile = new File(cacheDir.getAbsolutePath()
 						+ "/"
 						+ new SimpleDateFormat("yyyyMMdd_HHmmss")
@@ -121,20 +134,26 @@ public class SendActivity extends MenuActivity {
 			}
 		});
 
-		Button uploadButton = (Button) findViewById(R.id.uploadButton);
+		// Startet den Upload
+		uploadButton = (Button) findViewById(R.id.uploadButton);
+		uploadButton.setEnabled(false);
 		uploadButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
+				// Der Upload wird in einem eigenen Thread gestartet
 				new Thread(new Runnable() {
 					@Override
 					public void run() {
+						// ProgressDialog anzeigen
 						handler.post(new Runnable() {
 							@Override
 							public void run() {
 								pd.show();
 							}
 						});
+						// Upload starten
 						uploadBitmap(bitmap);
+						// ProgressDialog verbergen
 						handler.post(new Runnable() {
 							@Override
 							public void run() {
@@ -150,62 +169,78 @@ public class SendActivity extends MenuActivity {
 			}
 		});
 
+		// Liefert die nötigen URLs für den Upload
 		flickrAPI = new RestAPI(flickrAPIKey, flickrAPISecret,
 				flickrAPIAuthToken);
-		
+
+		// Zeigt während des Uploads den Verlauf an
+		// Könnte man auch als Notification implementieren
 		pd = new ProgressDialog(this);
 		pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-		pd.setMessage("Uploading Picture...");
+		pd.setMessage(getResources().getString(R.string.uploading));
 		pd.setCancelable(false);
 	}
 
 	/**
-	 * @todo TODO: http://www.flickr.com/services/api/upload.example.html
-	 * @todo TODO:
-	 *       http://blog.tacticalnuclearstrike.com/2010/01/using-multipartentity
-	 *       -in-android-applications/
+	 * Lädt das Bild hoch
+	 * 
+	 * Verwendet dazu MultipartEntity aus Apache HttpComponents
+	 * 
+	 * @see http://hc.apache.org/
 	 * 
 	 * @param bitmap
 	 * @return
 	 */
 	private void uploadBitmap(Bitmap bitmap) {
+
+		// Dieser erste Teil ist NUR für die flickr-API nötig
 		TreeMap<String, String> params = new TreeMap<String, String>();
 		params.put("api_key", flickrAPI.getApiKey());
 		params.put("auth_token", flickrAPI.getAuthToken());
 		params.put("tags", "httpclientdemo hsrm mobile android");
 		String requestSignature = flickrAPI.sign(params);
 
+		// Der eigentliche Upload begint ab hier:
 		HttpClient client = new DefaultHttpClient();
 		HttpPost request = new HttpPost(flickrAPI.getUploadUri().toString());
-		
+
 		// MultipartEntity multipartContent = new MultipartEntity();
-		ProgressMultipartEntity multipartContent = new ProgressMultipartEntity(new ProgressListener()
-		{
-			@Override
-			public void transferred(long num)
-			{
-				publishProgress((int) ((num / (float) totalSize) * 100));
-			}
-		});
+		// Verwenden hier eine Version mit Überwachung des Fortschritts
+		ProgressMultipartEntity multipartContent = new ProgressMultipartEntity(
+				new ProgressListener() {
+					@Override
+					public void transferred(long num) {
+						publishProgress((int) ((num / (float) totalSize) * 100));
+					}
+				});
 
 		try {
+			// Mögliche Datentypen für die Felder:
+			// ByteArrayBody, FileBody, InputStreamBody, StringBody
 			for (String param : params.keySet()) {
 				multipartContent.addPart(param,
 						new StringBody(params.get(param)));
 			}
+			// Das Photo wird als Datei angehängt
 			multipartContent.addPart("photo", new FileBody(imageFile));
+			// Zum Schluss noch die Signatur für flickr
 			multipartContent.addPart("api_sig",
 					new StringBody(requestSignature));
+			// Für die Fortschrittsanzeige merken wir uns die Gesamtgröße der
+			// Anfrage
 			totalSize = multipartContent.getContentLength();
 		} catch (UnsupportedEncodingException e) {
 			Log.e(getClass().getCanonicalName(), e.toString());
 		}
 
+		// Dem Request übergeben ...
 		request.setEntity(multipartContent);
 
 		try {
+			// ... und abschicken
 			HttpResponse response = client.execute(request);
 
+			// / Jetzt wie bei bei einem GET-Request die Antwort verarbeiten
 			StatusLine status = response.getStatusLine();
 			if (status.getStatusCode() != 200) {
 				throw new IOException("Invalid response from server: "
@@ -222,6 +257,7 @@ public class SendActivity extends MenuActivity {
 			}
 			String dataAsString = new String(content.toByteArray());
 
+			// Liest die neue Photo-ID aus der Antwort aus
 			UploadReader ur = new UploadReader();
 			String photoId = ur.getPhotoId(dataAsString);
 			Log.v(getClass().getCanonicalName(), photoId);
@@ -233,7 +269,8 @@ public class SendActivity extends MenuActivity {
 	/**
 	 * Progressbar aktualisieren
 	 * 
-	 * @param i Progress in Prozent 0 > i > 100
+	 * @param i
+	 *            Progress in Prozent 0 > i > 100
 	 */
 	protected void publishProgress(final int i) {
 		Log.v(getClass().getCanonicalName(), "Progress: " + i);
@@ -252,9 +289,13 @@ public class SendActivity extends MenuActivity {
 				ContentResolver cr = getContentResolver();
 				Bitmap bitmap;
 				try {
+					// Den Speicherort des Fotos haben wir beim Starten des
+					// Intents vorgegeben, jetzt holen wir uns von dort das Bild
 					bitmap = android.provider.MediaStore.Images.Media
 							.getBitmap(cr, selectedImageUri);
 					previewUpload.setImageBitmap(bitmap);
+					// Den Upload-Button aktivieren
+					uploadButton.setEnabled(true);
 				} catch (Exception e) {
 					Log.e(getClass().getCanonicalName(), e.toString());
 				}

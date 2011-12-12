@@ -116,6 +116,12 @@ public class RestAPI {
 		return uriBuilder.build();
 	}
 	
+	/**
+	 * Einige Requests an die API müssen signiert werden.
+	 * 
+	 * @param params
+	 * @return hash der Signatur
+	 */
 	public String sign(TreeMap<String, String> params)
 	{
 		String sig = getApiSecret();
