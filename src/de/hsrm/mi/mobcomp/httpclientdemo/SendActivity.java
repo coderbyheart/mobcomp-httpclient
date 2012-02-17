@@ -111,11 +111,12 @@ public class SendActivity extends MenuActivity {
 						.getExternalStorageDirectory().getAbsolutePath()
 						+ "/de.hsrm.mi.mobcomp.httpclientdemo/captures/");
 				if (!cacheDir.exists()) {
-					if (!cacheDir.mkdirs())
+					if (!cacheDir.mkdirs()) {
 						Log.e(getClass().getCanonicalName(),
 								"Failed to create directory: "
 										+ cacheDir.toString());
-					return;
+						return;
+					}
 				}
 				// Pfad zur Bild-Datei
 				imageFile = new File(cacheDir.getAbsolutePath()
